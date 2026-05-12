@@ -80,15 +80,27 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 
 ### TELL (narrate the Events panel as tool calls appear)
 
-> "First thing the agent does — see `load_skill` in the Events panel. That's the agentskills.io pattern in action. The agent is loading a *skill definition* — a file called SKILL.md that encodes the exception repair methodology. Let me explain what that is, because it's a key concept.
+> "First thing the agent does — see `load_skill` in the Events panel. That's the agentskills.io pattern in action. The agent is loading a *skill definition* — a file called SKILL.md that encodes the exception repair methodology. Let me show you what that actually looks like."
+
+**Open a second browser tab to**: `https://github.com/rrbanda/rhs26-payments-demo/blob/main/agents/payment_ops/skills/exception-repair/SKILL.md`
+
+*Show the SKILL.md file on screen. Scroll slowly through the frontmatter and the first few steps.*
+
+> "This is the actual skill file the agent just loaded. At the top — YAML frontmatter. Name, description, compatibility requirements, author, version, tags. This is the metadata — it's how the agent discovers and identifies the skill, and it's how you version it in a registry.
 >
-> A skill is a portable, versionable specification for how an agent should behave. It's a Markdown file with YAML frontmatter — same idea as a Kubernetes manifest or an OpenAPI spec, but for agent behavior. Our exception-repair skill defines an 8-step diagnostic methodology: review the queue, pull the exception, retrieve the payment message, cross-reference external data, check historical patterns, formulate a diagnosis, recommend an action, present structured output. It also declares compliance constraints — like 'never auto-repair amount mismatches' and 'sanctions decisions require human sign-off.'
+> Below that — Markdown instructions. An 8-step diagnostic methodology: review the queue, pull the exception, retrieve the payment message, cross-reference external data, check historical patterns, formulate a diagnosis, recommend an action, present structured output. Each step names the specific tools to call. And it declares compliance constraints — 'never auto-repair amount mismatches,' 'sanctions decisions require human sign-off.' Those aren't suggestions buried in a prompt string — they're explicit, version-controlled rules."
+
+*Click into the `references/` folder to show the three files.*
+
+> "Underneath the skill are L3 reference documents — SWIFT message format guides, approved repair procedures, ISO 20022 error code mappings. The agent can read these at runtime via `load_skill_resource` when it needs field-level detail. Think of the skill as the *methodology* and the references as the *domain knowledge*. Both are version-controlled, testable artifacts — not prompt strings buried in application code.
 >
-> The skill has L3 reference documents underneath it — SWIFT message format guides, approved repair procedures, ISO 20022 error code mappings. The agent can read those references at runtime via `load_skill_resource` when it needs field-level detail. Think of the skill as the *methodology* and the references as the *domain knowledge*. Both are version-controlled, testable artifacts — not prompt strings buried in application code.
+> This is a key concept: the skill is a *portable, versionable specification* for how an agent should behave. Same idea as a Kubernetes manifest or an OpenAPI spec, but for agent behavior. You can move this skill to a different agent framework, a different LLM, a different deployment — the methodology travels with it."
+
+*Switch back to the ADK Dev UI tab.*
+
+> "The agentskills.io spec also defines an eval format. Each skill has test cases — prompt, expected output, assertions. You can measure whether the skill actually improves agent output compared to a raw LLM without the skill. That's how you prove the skill adds value, and it's how you catch regressions when you update the methodology.
 >
-> The agentskills.io spec also defines an eval format. Each skill has test cases — prompt, expected output, assertions. You can measure whether the skill actually improves agent output compared to a raw LLM without the skill. That's how you prove the skill adds value, and it's how you catch regressions when you update the methodology.
->
-> Now watch the domain tool calls.
+> Now watch the domain tool calls."
 >
 > `get_exception_detail` — pulls the full exception record from the exception management system. The agent now knows the type is 'missing_bic', the payment reference, the error code E001, who the originator and beneficiary are.
 >
