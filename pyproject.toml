@@ -40,6 +40,7 @@ build-backend = "hatchling.build"
 markers = [
     "unit: Unit tests with mocked dependencies",
     "eval: ADK agent evaluation tests requiring live LLM",
+    "skill_eval: agentskills.io skill eval tests requiring live agent",
 ]
 asyncio_mode = "auto"
 
