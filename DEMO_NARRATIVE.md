@@ -60,7 +60,7 @@ Each beat follows the same rhythm: frame what you're about to show (TELL), do it
 
 > "Look at what's happening on the right side. The agent just pulled the exception detail from the exception management system. Now it's retrieving the original SWIFT MT103 message — that's the actual payment instruction. It found that field 57A — the beneficiary bank BIC — is empty. That's the root cause.
 >
-> Now it's looking up the counterparty. The beneficiary has a German IBAN — DE89 — so the agent checks Deutsche Bank's BIC code, DEUTDEFF, and confirms it's an active SWIFT member.
+> Now it's looking up the counterparty. The beneficiary has a German IBAN — DE89 — so the agent resolves the BIC from the IBAN bank identifier and confirms the bank is an active SWIFT member.
 >
 > Next: fraud score. The ML model scores this at 0.03 — essentially zero risk. And finally, it checks repair history — this pattern, missing BIC, has been resolved successfully 97% of the time over the last 147 cases. Average automated resolution: 4 minutes. Average manual resolution: 38 minutes.
 >
