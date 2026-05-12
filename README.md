@@ -2,11 +2,19 @@
 
 **Red Hat Summit 2026 Demo** | Wed May 13, B404
 
-A Google ADK agent that diagnoses and repairs payment exceptions by correlating data across SWIFT, settlement, sanctions, and fraud systems. Built with [agentskills.io](https://agentskills.io) skill patterns and served via the A2A (Agent-to-Agent) protocol.
+## Live Demo
+
+**ADK Web UI**: https://payment-ops-rhs26-payments-demo.apps.cluster-6crhb.6crhb.sandbox1011.opentlc.com
+
+Open that URL in a browser, select `payment_ops`, and start typing prompts.
+
+See [HANDOFF.md](HANDOFF.md) for the complete demo guide and [DEMO_NARRATIVE.md](DEMO_NARRATIVE.md) for the full talk track.
+
+---
 
 ## What This Demonstrates
 
-An AI agent sitting at the **operational seam** between payment platforms — the expensive, manual space where exceptions concentrate. The agent:
+A Google ADK agent sitting at the **operational seam** between payment platforms — the expensive, manual space where exceptions concentrate. The agent:
 
 1. Reviews a queue of payment exceptions (missing BIC, amount mismatch, sanctions hold, duplicate)
 2. Pulls the original SWIFT MT103 message and cross-references counterparty, sanctions, and fraud data
@@ -14,9 +22,11 @@ An AI agent sitting at the **operational seam** between payment platforms — th
 4. Presents a structured diagnosis with evidence and confidence level
 5. Recommends a repair action — but **waits for human approval** before executing
 
-All payment tools return **mock data** — no real payment systems required. The LLM is the only live dependency.
+All payment tools return **mock data** — no real payment systems required. The LLM (Gemini 2.5 Flash via LlamaStack) is the only live dependency.
 
-## Quick Start
+---
+
+## Quick Start (Local)
 
 ```bash
 # Install
@@ -25,56 +35,55 @@ pip install -e ".[dev]"
 # Copy env and edit if needed
 cp .env.example .env
 
-# Run locally
-PYTHONPATH=. uvicorn agents.payment_ops.server:app --host 0.0.0.0 --port 8006
+# Run with ADK Web UI (recommended -- same as deployed version)
+PYTHONPATH=. adk web --host 0.0.0.0 --port 8006 --session_service_uri memory:// agents
 
-# Test health
+# Or run A2A-only server (no UI)
+PYTHONPATH=. uvicorn agents.payment_ops.server:app --host 0.0.0.0 --port 8006
+```
+
+Then open http://localhost:8006 in your browser.
+
+```bash
+# Test health (A2A-only mode)
 curl http://localhost:8006/healthz
 
-# Agent card (A2A discovery)
-curl http://localhost:8006/.well-known/agent-card.json
-
-# Send a prompt via A2A JSON-RPC
-curl -X POST http://localhost:8006/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "message/send",
-    "params": {
-      "message": {
-        "role": "user",
-        "messageId": "msg-1",
-        "parts": [{"kind": "text", "text": "Show me today'\''s exception queue."}]
-      }
-    }
-  }'
+# Run unit tests
+NEO4J_PASSWORD=notused pytest tests/ -v
 ```
 
-Or use the ADK dev UI:
-```bash
-adk web agents/payment_ops
+---
+
+## Demo Prompts (copy-paste)
+
+```
+Show me today's exception queue.
 ```
 
-## Demo Script (12 minutes)
+```
+Diagnose exception EXC-2024-0847. Show me your full diagnosis with all evidence before recommending any action.
+```
 
-| Beat | Prompt | What Happens |
-|------|--------|-------------|
-| 1. Frame the seam | "Show me today's exception queue" | Agent lists 4 pending exceptions with priorities |
-| 2. Integration point | "Diagnose exception EXC-2024-0847" | Agent pulls data from 5 mock systems, identifies missing BIC |
-| 3. Predictive models | (automatic) | Agent checks fraud score (0.03) and repair history (97% success) |
-| 4. Human in the loop | "Approved. Submit the repair." | Agent submits repair with audit trail |
-| 5. Earning autonomy | (narrate) | Shadow mode, measured accuracy, gated expansion |
-| 6. Pattern generalizes | "Check the sanctions hold on EXC-2024-0853" | Same agent triages sanctions false positive |
+```
+Approved. Submit the repair for EXC-2024-0847.
+```
+
+```
+Now check the sanctions hold on EXC-2024-0853. Full diagnosis please.
+```
+
+---
 
 ## Mock Exception Scenarios
 
 | ID | Type | Root Cause | Agent Action |
 |----|------|-----------|-------------|
-| EXC-2024-0847 | Missing BIC | :57A field empty in MT103 | Looks up DEUTDEFF, recommends BIC repair |
+| EXC-2024-0847 | Missing BIC | :57A field empty in MT103 | Resolves BIC from IBAN, recommends repair |
 | EXC-2024-0851 | Amount Mismatch | USD 50K vs 5K | Flags discrepancy, escalates (policy CP-PAY-007) |
 | EXC-2024-0853 | Sanctions Hold | OFAC fuzzy match (0.31) | Identifies false positive, notes compliance sign-off required |
 | EXC-2024-0856 | Duplicate Payment | Same ref submitted twice | Recommends reject, links to original |
+
+---
 
 ## Architecture
 
@@ -96,10 +105,16 @@ shared/
 └── health.py                   # /healthz + /readyz endpoints
 ```
 
-## Deploy to OpenShift via Kagenti
+---
+
+## Deploy to OpenShift
 
 ```bash
-# Prereqs: oc login, Kagenti installed
+# Set required env vars first
+export KEYCLOAK_USER=your-user
+export KEYCLOAK_PASSWORD=your-password
+
+# Deploy via Kagenti
 scripts/deploy_kagenti.sh
 ```
 
@@ -108,6 +123,8 @@ Or via container build:
 docker build -t payment-ops -f Dockerfile .
 docker run -p 8006:8000 -e NEO4J_PASSWORD=notused payment-ops
 ```
+
+---
 
 ## Run Tests
 

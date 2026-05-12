@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: payment-ops
-  namespace: smp-agents
+  namespace: rhs26-payments-demo
   labels:
     app.kubernetes.io/name: payment-ops
 spec:
@@ -14,4 +14,3 @@ spec:
       protocol: TCP
   selector:
     app.kubernetes.io/name: payment-ops
-    kagenti.io/type: agent

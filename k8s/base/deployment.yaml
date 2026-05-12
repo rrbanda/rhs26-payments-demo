@@ -2,53 +2,33 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: payment-ops
-  namespace: smp-agents
+  namespace: rhs26-payments-demo
   labels:
     app.kubernetes.io/name: payment-ops
     app.kubernetes.io/component: agent
-    kagenti.io/type: agent
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: payment-ops
-      kagenti.io/type: agent
   template:
     metadata:
       labels:
         app.kubernetes.io/name: payment-ops
-        kagenti.io/type: agent
-        kagenti.io/inject: enabled
-        kagenti.io/spire: enabled
-        kagenti.io/client-registration-inject: "true"
     spec:
-      serviceAccountName: payment-ops
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: agent
-          image: ghcr.io/rrbanda/smp-agents/payment-ops:latest
+          image: image-registry.openshift-image-registry.svc:5000/rhs26-payments-demo/payment-ops:latest
           imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8000
               protocol: TCP
           env:
-            - name: PORT
-              value: "8000"
-            - name: HOST
-              value: "0.0.0.0"
             - name: LLAMASTACK_API_KEY
               value: "not-needed"
             - name: NEO4J_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: smp-secrets
-                  key: NEO4J_PASSWORD
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://otel-collector.kagenti-system.svc.cluster.local:8335"
+              value: "notused"
           volumeMounts:
             - name: config
               mountPath: /app/config.yaml
@@ -58,27 +38,21 @@ spec:
               cpu: 100m
               memory: 256Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            runAsNonRoot: true
+              cpu: "1"
+              memory: 1Gi
           livenessProbe:
             httpGet:
-              path: /healthz
+              path: /
               port: http
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: /
               port: http
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
       volumes:
         - name: config
           configMap:
-            name: smp-config
+            name: payment-ops-config

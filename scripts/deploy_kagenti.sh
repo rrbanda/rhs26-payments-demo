@@ -6,8 +6,8 @@ set -euo pipefail
 
 KEYCLOAK_URL="${KEYCLOAK_URL:-https://keycloak-keycloak.apps.cluster-6crhb.6crhb.sandbox1011.opentlc.com}"
 KAGENTI_API="${KAGENTI_API:-https://kagenti-api-kagenti-system.apps.cluster-6crhb.6crhb.sandbox1011.opentlc.com}"
-KEYCLOAK_USER="${KEYCLOAK_USER:-temp-admin}"
-KEYCLOAK_PASSWORD="${KEYCLOAK_PASSWORD:-294a22d0eecd438f99a3559929f8066e}"
+KEYCLOAK_USER="${KEYCLOAK_USER:?Set KEYCLOAK_USER env var}"
+KEYCLOAK_PASSWORD="${KEYCLOAK_PASSWORD:?Set KEYCLOAK_PASSWORD env var}"
 NAMESPACE="${NAMESPACE:-rhs26-payments-demo}"
 GIT_REPO="${GIT_REPO:-https://github.com/rrbanda/rhs26-payments-demo.git}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
