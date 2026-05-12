@@ -92,7 +92,7 @@ Now check the sanctions hold on EXC-2024-0853. Full diagnosis please.
 ```mermaid
 flowchart TB
     subgraph cluster ["OpenShift Cluster"]
-        subgraph kagenti ["Kagenti Platform"]
+        subgraph kagenti ["Red Hat Agent Operator"]
             controller["Controller Manager"]
             keycloak["Keycloak\nOAuth/OIDC"]
             otel["OTel Collector"]
@@ -250,7 +250,7 @@ tests/
 export KEYCLOAK_USER=your-user
 export KEYCLOAK_PASSWORD=your-password
 
-# Deploy via Kagenti
+# Deploy via Red Hat Agent Operator
 scripts/deploy_kagenti.sh
 ```
 
