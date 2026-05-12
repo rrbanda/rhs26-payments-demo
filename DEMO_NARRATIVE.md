@@ -230,6 +230,190 @@ Use the mock exception scenarios table from the README. The narrative carries wi
 
 ---
 
+## Architecture Reference
+
+Use this section if asked about the technical architecture, or as a mental model while narrating.
+
+### What Makes This Agentic (Not Just a Chatbot)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    WHAT MAKES IT AGENTIC                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. MULTI-STEP REASONING                                        │
+│     Agent decides WHICH tools to call based on exception type   │
+│     Missing BIC → counterparty lookup                           │
+│     Sanctions hold → screening + compliance constraints         │
+│     Not a hardcoded sequence — the agent adapts                 │
+│                                                                 │
+│  2. TOOL ORCHESTRATION                                          │
+│     5-7 tool calls per diagnosis, correlated across systems     │
+│     Agent synthesizes findings into structured diagnosis        │
+│                                                                 │
+│  3. COMPLIANCE-AWARE BEHAVIOR                                   │
+│     Different rules for different exception types               │
+│     Will submit BIC repair — refuses to release sanctions hold  │
+│     Policy encoded in the skill, not prompt engineering         │
+│                                                                 │
+│  4. HUMAN-IN-THE-LOOP BY DESIGN                                 │
+│     Assist mode with explicit approval gates                    │
+│     Audit trail on every action                                 │
+│     Trust progression: Assist → Supervised → Autonomous         │
+│                                                                 │
+│  5. PORTABLE METHODOLOGY (agentskills.io)                       │
+│     SKILL.md = versionable, testable, framework-portable spec   │
+│     Eval suite measures skill vs raw LLM                        │
+│     References carry domain knowledge as artifacts              │
+│                                                                 │
+│  6. EVIDENCE CHAINS (Glass Box)                                 │
+│     Every conclusion traces to a specific tool call             │
+│     Events panel shows reasoning in real time                   │
+│     Auditor can reconstruct every decision                      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Stack Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        OPENSHIFT CLUSTER                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                    KAGENTI PLATFORM                        │  │
+│  │  Controller │ Keycloak (OAuth/OIDC) │ OTel Collector      │  │
+│  │  AuthBridge (Envoy + SPIFFE/SPIRE) │ MCP Gateway          │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│           │                                                     │
+│           │ manages lifecycle, injects security                  │
+│           ▼                                                     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │              PAYMENT OPS AGENT (container)                 │  │
+│  │                                                           │  │
+│  │  ┌─────────────┐  ┌──────────────────────────────────┐   │  │
+│  │  │  Google ADK  │  │  agentskills.io Skill            │   │  │
+│  │  │  Agent       │  │  ┌────────────────────────────┐  │   │  │
+│  │  │  + LiteLlm   │  │  │ SKILL.md                   │  │   │  │
+│  │  │             │  │  │ 8-step repair methodology  │  │   │  │
+│  │  │             │  │  │ compliance constraints     │  │   │  │
+│  │  │             │  │  ├────────────────────────────┤  │   │  │
+│  │  │             │  │  │ references/                │  │   │  │
+│  │  │             │  │  │  swift-message-formats.md  │  │   │  │
+│  │  │             │  │  │  repair-procedures.md      │  │   │  │
+│  │  │             │  │  │  iso20022-error-codes.md   │  │   │  │
+│  │  │             │  │  ├────────────────────────────┤  │   │  │
+│  │  │             │  │  │ evals/evals.json           │  │   │  │
+│  │  │             │  │  │  skill quality test cases  │  │   │  │
+│  │  │             │  │  └────────────────────────────┘  │   │  │
+│  │  └──────┬──────┘  └──────────────────────────────────┘   │  │
+│  │         │                                                 │  │
+│  │         │ calls 8 tools (plain Python functions)           │  │
+│  │         ▼                                                 │  │
+│  │  ┌─────────────────────────────────────────────────────┐  │  │
+│  │  │              MOCK PAYMENT TOOLS                      │  │  │
+│  │  │                                                     │  │  │
+│  │  │  get_exception_queue     get_counterparty_info      │  │  │
+│  │  │  get_exception_detail    check_sanctions_status     │  │  │
+│  │  │  get_payment_message     get_repair_history         │  │  │
+│  │  │  get_fraud_score         submit_repair              │  │  │
+│  │  │                                                     │  │  │
+│  │  │  Today: hardcoded JSON    Production: real API calls │  │  │
+│  │  │  Same signatures — agent doesn't know the difference │  │  │
+│  │  └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │  Served via: A2A protocol (JSON-RPC)                      │  │
+│  │  UI: ADK Dev UI (chat + Events panel)                     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│           │                                                     │
+│           │ LLM calls                                           │
+│           ▼                                                     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  LlamaStack (inference endpoint)                          │  │
+│  │  → Gemini 2.5 Flash (via OpenAI-compatible API)           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Tools: Why Plain Functions, Not MCP
+
+The 8 payment tools are plain Python functions, not MCP servers. This is a deliberate design choice:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                   TOOL INTEGRATION                        │
+│                                                          │
+│  THIS DEMO (plain functions):                            │
+│                                                          │
+│  Agent ──→ get_fraud_score()  ──→ returns JSON           │
+│         ──→ check_sanctions()  ──→ returns JSON           │
+│         ──→ submit_repair()    ──→ returns JSON           │
+│                                                          │
+│  ADK auto-discovers signatures + docstrings              │
+│  LLM sees tool names, parameters, descriptions           │
+│  Zero protocol overhead — function call in-process       │
+│                                                          │
+│  PRODUCTION (swap function body):                        │
+│                                                          │
+│  Agent ──→ get_fraud_score()  ──→ HTTP to fraud API      │
+│         ──→ check_sanctions()  ──→ HTTP to screening API  │
+│         ──→ submit_repair()    ──→ HTTP to workflow API   │
+│                                                          │
+│  Same signature, same docstring, same return type        │
+│  Agent code doesn't change — only the function body      │
+│                                                          │
+│  WITH MCP (if tools need cross-agent discovery):         │
+│                                                          │
+│  Agent ──→ McpToolset ──→ MCP Server ──→ payment APIs    │
+│                                                          │
+│  Adds: tool discovery, schema negotiation, routing       │
+│  Kagenti MCP Gateway handles policy enforcement          │
+│  Use when MULTIPLE agents need the SAME tools            │
+│                                                          │
+│  KEY POINT: MCP is about tool DISTRIBUTION               │
+│  Agent skills are about agent BEHAVIOR                   │
+│  They're complementary, not competing                    │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**If someone asks "why not MCP?":**
+
+> "MCP is about how agents discover and connect to tools -- Kagenti supports it through its MCP Gateway. For this demo, the tools are co-deployed with the agent as Python functions -- simplest integration, zero protocol overhead. In production, you might expose these payment APIs as MCP servers so multiple agents across the organization can discover and use them. That's a deployment choice, not an architecture change. The agent's behavior -- the skill, the reasoning, the compliance constraints -- stays the same either way. MCP is about tool distribution. Agent skills are about agent behavior. They're complementary."
+
+### Protocol and Discovery
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                   HOW CLIENTS FIND THE AGENT              │
+│                                                          │
+│  Discovery:                                              │
+│  GET /.well-known/agent-card.json                        │
+│  → Returns: name, description, skills, capabilities      │
+│  → Any A2A client can find and understand this agent     │
+│                                                          │
+│  Interaction:                                            │
+│  POST / (JSON-RPC 2.0)                                   │
+│  method: "message/send"                                  │
+│  → Agent processes, calls tools, returns response        │
+│  → Streaming via SSE in the ADK Dev UI                   │
+│                                                          │
+│  Health:                                                 │
+│  GET / → 307 redirect to ADK Dev UI                      │
+│  (Kubernetes probes use this for liveness/readiness)     │
+│                                                          │
+│  This is the A2A protocol — framework-neutral,           │
+│  JSON-RPC-based, same pattern regardless of whether      │
+│  the agent is built with ADK, LangGraph, or CrewAI.     │
+│  Kagenti provides the networking layer.                  │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Key Numbers to Remember
 
 | Fact | Number | Source |
