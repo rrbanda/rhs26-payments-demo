@@ -1,0 +1,38 @@
+model:
+  agent:
+    id: "${LLM_MODEL_ID:-openai/gemini/models/gemini-2.5-flash}"
+    api_base: "${LLM_API_BASE:-https://llamastack-llamastack.apps.cluster-6crhb.6crhb.sandbox1011.opentlc.com/v1}"
+    api_key: "${LLAMASTACK_API_KEY:-not-needed}"
+  embedding:
+    id: "vllm-embedding/nomic-embed-text-v1-5"
+    dimension: 768
+    api_base: "${EMBEDDING_API_BASE:-https://llamastack-llamastack.apps.cluster-6crhb.6crhb.sandbox1011.opentlc.com/v1}"
+
+neo4j:
+  uri: "${NEO4J_URI:-bolt://localhost:7687}"
+  http_url: "${NEO4J_HTTP_URL:-}"
+  user: "${NEO4J_USER:-neo4j}"
+  password: "${NEO4J_PASSWORD:-notused}"
+  database: "neo4j"
+
+catalog:
+  base_url: "${SKILL_CATALOG_URL:-}"
+
+oci:
+  registry_url: "${OCI_REGISTRY_URL:-}"
+  namespace: "team1"
+  cache_ttl_seconds: 300
+
+a2a:
+  provider:
+    organization: "Skills Marketplace"
+    url: "https://skills-marketplace.example.com"
+
+agents:
+  payment_ops:
+    name: "payment_ops"
+    description: "Diagnoses and repairs payment exceptions using multi-system data and predictive models."
+    host: "0.0.0.0"
+    port: 8006
+    a2a:
+      version: "0.1.0"
