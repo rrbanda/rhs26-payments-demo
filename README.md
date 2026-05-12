@@ -87,22 +87,158 @@ Now check the sanctions hold on EXC-2024-0853. Full diagnosis please.
 
 ## Architecture
 
+### Platform Stack
+
+```mermaid
+flowchart TB
+    subgraph cluster ["OpenShift Cluster"]
+        subgraph kagenti ["Kagenti Platform"]
+            controller["Controller Manager"]
+            keycloak["Keycloak\nOAuth/OIDC"]
+            otel["OTel Collector"]
+        end
+
+        subgraph agentPod ["Payment Ops Agent"]
+            adkWeb["ADK Web UI + A2A Server\nport 8000"]
+            agent["Google ADK Agent"]
+            skill["agentskills.io Skill\nSKILL.md + references/"]
+            tools["8 Mock Payment Tools"]
+        end
+
+        subgraph llm ["LLM Inference"]
+            llamastack["LlamaStack"]
+            gemini["Gemini 2.5 Flash"]
+        end
+    end
+
+    browser["Browser / A2A Client"] -->|"HTTPS"| adkWeb
+    adkWeb --> agent
+    agent -->|"load_skill"| skill
+    agent -->|"tool calls"| tools
+    agent -->|"LiteLlm"| llamastack
+    llamastack --> gemini
+    kagenti -.->|"lifecycle\nsecurity\nobservability"| agentPod
+```
+
+### Agent Internals
+
+```mermaid
+flowchart LR
+    subgraph skillDef ["agentskills.io Skill"]
+        skillmd["SKILL.md\n8-step methodology\ncompliance constraints"]
+        ref1["references/\nswift-message-formats.md"]
+        ref2["repair-procedures.md"]
+        ref3["iso20022-error-codes.md"]
+        evals["evals/evals.json\n3 test cases"]
+    end
+
+    subgraph agentCore ["ADK Agent"]
+        instruction["Agent Instruction\nAssist mode rules"]
+        toolset["SkillToolset"]
+    end
+
+    subgraph mockTools ["Mock Payment Tools"]
+        queue["get_exception_queue"]
+        detail["get_exception_detail"]
+        message["get_payment_message"]
+        counterparty["get_counterparty_info"]
+        sanctions["check_sanctions_status"]
+        history["get_repair_history"]
+        fraud["get_fraud_score"]
+        repair["submit_repair"]
+    end
+
+    skillmd --> toolset
+    ref1 --> toolset
+    ref2 --> toolset
+    ref3 --> toolset
+    toolset --> agentCore
+    mockTools --> agentCore
+```
+
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    participant User as Operator
+    participant UI as ADK Web UI
+    participant Agent as Payment Ops Agent
+    participant LLM as Gemini 2.5 Flash
+    participant Tools as Mock Payment Tools
+
+    User->>UI: "Diagnose EXC-2024-0847"
+    UI->>Agent: Create session + invoke
+    Agent->>LLM: Instruction + user message
+    LLM-->>Agent: Call get_exception_detail
+    Agent->>Tools: get_exception_detail
+    Tools-->>Agent: Exception record JSON
+    Agent->>LLM: Tool result + continue
+    LLM-->>Agent: Call get_payment_message
+    Agent->>Tools: get_payment_message
+    Tools-->>Agent: SWIFT MT103 content
+    Agent->>LLM: Tool result + continue
+    LLM-->>Agent: Call get_fraud_score
+    Agent->>Tools: get_fraud_score
+    Tools-->>Agent: Score 0.03 low risk
+    Agent->>LLM: Tool result + continue
+    LLM-->>Agent: Final diagnosis
+    Agent-->>UI: Structured diagnosis + recommendation
+    UI-->>User: Evidence chain + approval prompt
+```
+
+### Eval System
+
+```mermaid
+flowchart TB
+    subgraph trackA ["Track A: ADK Agent Evals"]
+        testJSON["3 x *.test.json\nConversation scenarios"]
+        evaluator["AgentEvaluator.evaluate\nTool trajectory + ROUGE-1"]
+        coverage["tool_coverage metric\nDomain tool usage check"]
+    end
+
+    subgraph trackB ["Track B: agentskills.io Skill Evals"]
+        evalsJSON["evals/evals.json\n3 cases x 14 assertions"]
+        withSkill["With Skill\nAgent via A2A"]
+        withoutSkill["Without Skill\nRaw LLM baseline"]
+        judge["LLM-as-Judge\nAssertion grading"]
+        benchmark["benchmark.json\nDelta analysis"]
+    end
+
+    testJSON --> evaluator
+    evaluator --> coverage
+    evalsJSON --> withSkill
+    evalsJSON --> withoutSkill
+    withSkill --> judge
+    withoutSkill --> judge
+    judge --> benchmark
+```
+
+### File Structure
+
 ```
 agents/payment_ops/
-├── agent.py                    # ADK Agent + SkillToolset + 8 mock tools
-├── server.py                   # A2A server via to_a2a() on port 8006
+├── agent.py                    # ADK Agent + SkillToolset + 8 tools
+├── server.py                   # A2A + ADK Web UI server
 ├── skills/exception-repair/
 │   ├── SKILL.md                # agentskills.io repair methodology
-│   └── references/
-│       ├── swift-message-formats.md
-│       ├── repair-procedures.md
-│       └── iso20022-error-codes.md
+│   ├── references/             # L3 domain knowledge
+│   │   ├── swift-message-formats.md
+│   │   ├── repair-procedures.md
+│   │   └── iso20022-error-codes.md
+│   └── evals/evals.json        # Skill quality test cases
 └── evals/                      # ADK eval datasets (3 scenarios)
 
 shared/
-├── payment_tools.py            # 8 mock tools (SWIFT, sanctions, fraud, repair)
+├── payment_tools.py            # 8 mock tools (swap-ready for real APIs)
 ├── model_config.py             # Config loader (config.yaml + env vars)
+├── eval_metrics.py             # Custom tool_coverage metric
+├── skill_eval_runner.py        # agentskills.io with/without-skill runner
 └── health.py                   # /healthz + /readyz endpoints
+
+tests/
+├── test_payment_ops.py         # 19 unit tests (agent + tools)
+├── test_agent_evals.py         # ADK AgentEvaluator (needs live LLM)
+└── test_skill_evals.py         # Skill eval data integrity + execution
 ```
 
 ---
