@@ -38,11 +38,11 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 >
 > The agent is served over the A2A protocol — Agent-to-Agent — which is a JSON-RPC standard for agent interoperability. Any client, any UI, any orchestrator can discover this agent and talk to it.
 >
-> It's running on OpenShift right now, managed by Red Hat Agent Operator — that's an open-source cloud-native platform for deploying and operating AI agents in production. Red Hat Agent Operator is framework-neutral: it doesn't care whether your agent is built with Google ADK, LangGraph, CrewAI, or anything else. What Red Hat Agent Operator provides is the production infrastructure that agent frameworks don't — lifecycle management, zero-trust security, networking, and observability. Think of it as the Kubernetes-native operations layer for agents.
+> It's running on OpenShift AI right now, managed by Red Hat Agent Operator — that's an open-source cloud-native platform for deploying and operating AI agents in production. Red Hat Agent Operator is framework-neutral: it doesn't care whether your agent is built with Google ADK, LangGraph, CrewAI, or anything else. What Red Hat Agent Operator provides is the production infrastructure that agent frameworks don't — lifecycle management, zero-trust security, networking, and observability. Think of it as the Kubernetes-native operations layer for agents.
 >
 > On this cluster, Red Hat Agent Operator runs a controller that manages agent deployments as Kubernetes workloads. It integrates Keycloak for OAuth/OIDC authentication, so every request to the agent goes through an identity layer. In our Skills Marketplace production setup, it also injects an AuthBridge sidecar — an Envoy-based proxy that handles JWT validation, SPIFFE workload identity, and policy enforcement at the network edge. The health endpoints, the agent card discovery, the A2A protocol endpoint — those all pass through AuthBridge transparently.
 >
-> For this demo, the agent is deployed as a standard OpenShift container with a Route. In production, Red Hat Agent Operator adds the security and observability layers on top — same agent code, same container, but with identity, auth, tracing, and lifecycle management handled by the platform.
+> For this demo, the agent is deployed as a standard OpenShift AI container with a Route. In production, Red Hat Agent Operator adds the security and observability layers on top — same agent code, same container, but with identity, auth, tracing, and lifecycle management handled by the platform.
 >
 > The tools the agent calls are mock implementations today — same function signatures as real payment APIs, returning realistic data. In production you swap the function body; the agent doesn't know the difference. The LLM — Gemini 2.5 Flash, running through a LlamaStack inference endpoint — is the only live system."
 
@@ -230,7 +230,7 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 
 > "So what did you just see? Let me be precise about it.
 >
-> An AI agent built on Google ADK using the agentskills.io open specification. It's served over the A2A protocol — standard JSON-RPC, discoverable via a well-known agent card endpoint. It runs on OpenShift, managed by Red Hat Agent Operator — the open-source platform that handles agent lifecycle, security, and observability so the agent developer doesn't have to.
+> An AI agent built on Google ADK using the agentskills.io open specification. It's served over the A2A protocol — standard JSON-RPC, discoverable via a well-known agent card endpoint. It runs on OpenShift AI, managed by Red Hat Agent Operator — the open-source platform that handles agent lifecycle, security, and observability so the agent developer doesn't have to.
 >
 > The agent has eight callable tools — each one a Python function that wraps an API call to a payment system. Today those return mock data. In production, you swap the function body — the signature, the docstring, the return type stay the same. The agent, the LLM, the skill definition — none of them change. That's the swap-ready pattern.
 >
@@ -494,7 +494,7 @@ If an audience member asks, here's the precise terminology:
 
 | Concept | What It Is |
 |---------|-----------|
-| **Red Hat Agent Operator** | Cloud-native platform for deploying AI agents in production, built on the open-source Kagenti project (github.com/kagenti/kagenti). Framework-neutral — works with ADK, LangGraph, CrewAI, etc. Provides lifecycle management, zero-trust security (AuthBridge + SPIFFE/SPIRE), Keycloak OAuth/OIDC, OTel observability, and A2A/MCP protocol networking. Runs on Kubernetes/OpenShift. |
+| **Red Hat Agent Operator** | Cloud-native platform for deploying AI agents in production, built on the open-source Kagenti project (github.com/kagenti/kagenti). Framework-neutral — works with ADK, LangGraph, CrewAI, etc. Provides lifecycle management, zero-trust security (AuthBridge + SPIFFE/SPIRE), Keycloak OAuth/OIDC, OTel observability, and A2A/MCP protocol networking. Runs on Kubernetes/OpenShift AI. |
 | **Google ADK** | Open-source Agent Development Kit from Google. Provides Agent class, tool registration, session management, A2A serving, and eval framework. |
 | **agentskills.io** | Open specification for packaging agent capabilities as portable skills. A skill is a SKILL.md file (YAML frontmatter + Markdown instructions) with optional references, evals, and scripts. |
 | **A2A Protocol** | Agent-to-Agent protocol. JSON-RPC-based standard for agent interoperability. Agents are discoverable via `/.well-known/agent-card.json` and callable via `message/send`. |
@@ -502,7 +502,7 @@ If an audience member asks, here's the precise terminology:
 | **BIC** | Bank Identifier Code. 8 or 11 character SWIFT address. Can be derived from IBAN country code + bank code. |
 | **OFAC SDN** | Office of Foreign Assets Control, Specially Designated Nationals list. U.S. Treasury sanctions watchlist. |
 | **LiteLlm** | Open-source Python library that provides a unified interface to 100+ LLM providers. ADK uses it to connect to any OpenAI-compatible endpoint. |
-| **LlamaStack** | Meta's open-source inference serving platform. Running on OpenShift, proxying to Gemini 2.5 Flash via an OpenAI-compatible API. |
+| **LlamaStack** | Meta's open-source inference serving platform. Running on OpenShift AI, proxying to Gemini 2.5 Flash via an OpenAI-compatible API. |
 | **SR 11-7** | Federal Reserve supervisory guidance on model risk management. Requires inventory, validation, and ongoing monitoring of models used in decision-making. |
 | **CP-BSA-012** | (Demo) Compliance policy requiring human sign-off on all sanctions screening decisions under BSA/AML regulations. |
 | **Shadow mode** | Agent runs in parallel with the human operator. Both produce recommendations independently. Agreement rate is measured over 30 days to build evidence for expanded autonomy. |

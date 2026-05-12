@@ -91,7 +91,7 @@ Now check the sanctions hold on EXC-2024-0853. Full diagnosis please.
 
 ```mermaid
 flowchart TB
-    subgraph cluster ["OpenShift Cluster"]
+    subgraph cluster ["OpenShift AI"]
         subgraph kagenti ["Red Hat Agent Operator"]
             controller["Controller Manager"]
             keycloak["Keycloak\nOAuth/OIDC"]
@@ -243,7 +243,7 @@ tests/
 
 ---
 
-## Deploy to OpenShift
+## Deploy to OpenShift AI
 
 ```bash
 # Set required env vars first
