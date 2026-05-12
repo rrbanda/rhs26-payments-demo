@@ -8,7 +8,7 @@
 
 Open that URL in a browser, select `payment_ops`, and start typing prompts.
 
-See [HANDOFF.md](HANDOFF.md) for the complete demo guide and [DEMO_NARRATIVE.md](DEMO_NARRATIVE.md) for the full talk track.
+See [DEMO_NARRATIVE.md](DEMO_NARRATIVE.md) for the complete demo guide: pre-demo checklist, talk track, expected outputs, recovery procedures, architecture reference, and technical cheat sheet — all in one file.
 
 ---
 

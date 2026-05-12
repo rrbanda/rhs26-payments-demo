@@ -3,6 +3,20 @@
 **Session**: Payments, Reimagined — Wed May 13, B404
 **Segment**: Raghu — Agents at the Seam (~12 min, starting ~12:10)
 **URL**: https://payment-ops-rhs26-payments-demo.apps.cluster-6crhb.6crhb.sandbox1011.opentlc.com
+**Source**: https://github.com/rrbanda/rhs26-payments-demo
+**OpenShift Project**: `rhs26-payments-demo`
+
+---
+
+## Pre-Demo Checklist (5 min before)
+
+1. Open the URL above in your browser
+2. Confirm the ADK Dev UI loads and shows `payment_ops` in the sidebar
+3. Click "NEW SESSION" to start fresh
+4. Verify the LLM is responding -- type "hello" and confirm you get a reply
+5. Open a second tab to https://github.com/rrbanda/rhs26-payments-demo/blob/main/agents/payment_ops/skills/exception-repair/SKILL.md (you'll show this in Beat 3)
+6. If the pod is down, see Recovery section at the bottom
+7. Have this file open on a second screen or printed for reference
 
 ---
 
@@ -48,7 +62,13 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 
 **Type**: `Show me today's exception queue.`
 
-*Agent calls `get_exception_queue` and returns 4 exceptions.*
+*Agent calls `get_exception_queue` and returns 4 exceptions. Response time: ~3-5 seconds.*
+
+**Expected output**: 4 exceptions listed:
+- EXC-2024-0847: Missing BIC, high priority, USD 125K
+- EXC-2024-0851: Amount Mismatch, critical priority, USD 50K
+- EXC-2024-0853: Sanctions Hold, high priority, EUR 87.5K
+- EXC-2024-0856: Duplicate Payment, medium priority, GBP 23.75K
 
 ### TELL
 
@@ -76,7 +96,10 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 
 **Type**: `Diagnose exception EXC-2024-0847. Show me your full diagnosis with all evidence before recommending any action.`
 
-*Agent starts calling tools. The Events panel shows each call in real time.*
+*Agent starts calling tools. The Events panel shows each call in real time. Response time: ~10-20 seconds.*
+
+**Expected tools in Events panel**: `load_skill`, `get_exception_detail`, `get_payment_message`, `get_counterparty_info`, `get_fraud_score`, `get_repair_history`
+**Expected output**: Structured diagnosis identifying missing BIC in field :57A, recommending `add_bic` with high confidence (97% historical success rate).
 
 ### TELL (narrate the Events panel as tool calls appear)
 
@@ -134,7 +157,9 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 
 **Type**: `Approved. Submit the repair for EXC-2024-0847.`
 
-*Agent calls `submit_repair` and returns confirmation with audit trail.*
+*Agent calls `submit_repair` and returns confirmation with audit trail. Response time: ~3-5 seconds.*
+
+**Expected output**: Audit record with timestamp, action `add_bic`, approval status `pending_human_review`, audit ID.
 
 ### TELL
 
@@ -174,7 +199,10 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 
 **Type**: `Now check the sanctions hold on EXC-2024-0853. Full diagnosis please.`
 
-*Agent calls `get_exception_detail`, `check_sanctions_status`, `get_payment_message`, `get_fraud_score`, `get_repair_history`.*
+*Agent calls tools. Response time: ~15-25 seconds.*
+
+**Expected tools in Events panel**: `get_exception_detail`, `check_sanctions_status`, `get_payment_message`, `get_fraud_score`, `get_repair_history`
+**Expected output**: Diagnosis identifying OFAC fuzzy match (0.31), recommends `release_false_positive`, explicitly states compliance officer sign-off required (CP-BSA-012). Will NOT auto-submit.
 
 ### TELL (while agent works, narrate the Events panel)
 
@@ -214,19 +242,50 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 
 ---
 
-## Emergency Fallback
+## Recovery and Fallback
 
-If the agent or LLM is slow or unresponsive:
+### If the agent is slow
 
-> "The agent is thinking — it's making multiple tool calls to different systems. While it works, let me show you what's happening in the Events panel..."
+> "The agent is thinking — it's calling five different systems. While it works, let me tell you what it's doing..."
 
-Then narrate the tool calls from the Events panel. The story holds either way because you're explaining the architecture, not just reading output.
+Narrate the tool calls from the Events panel. The story holds because you're explaining the architecture, not just reading output.
 
-If the UI is completely down, switch to narrating the architecture:
+### If the UI is completely down
+
+Switch to narrating the architecture:
 
 > "Let me walk you through what the agent does, using the same data it would show you live..."
 
-Use the mock exception scenarios table from the README. The narrative carries without the live demo because the technical content is in the TELL, not just the SHOW.
+Use the mock exception scenarios table from the README.
+
+### If the pod is down
+
+From a terminal with `oc` logged in:
+
+```bash
+oc get pods -n rhs26-payments-demo
+oc rollout restart deployment/payment-ops -n rhs26-payments-demo
+oc rollout status deployment/payment-ops -n rhs26-payments-demo
+curl -sk https://payment-ops-rhs26-payments-demo.apps.cluster-6crhb.6crhb.sandbox1011.opentlc.com/
+```
+
+### If the cluster is unreachable — run locally
+
+```bash
+cd rhs26-payments-demo
+pip install -e .
+PYTHONPATH=. LLM_MODEL_ID="openai/gemini/models/gemini-2.5-flash" \
+  LLM_API_BASE="https://llamastack-llamastack.apps.cluster-6crhb.6crhb.sandbox1011.opentlc.com/v1" \
+  LLAMASTACK_API_KEY="not-needed" \
+  NEO4J_PASSWORD="notused" \
+  adk web --host 0.0.0.0 --port 8006 --session_service_uri memory:// agents
+```
+
+Then open http://localhost:8006.
+
+### If the LLM endpoint is down
+
+The narrative is designed to carry without a live agent. The technical content is in the TELL, not just the SHOW.
 
 ---
 
