@@ -74,9 +74,19 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 
 ### TELL (narrate the Events panel as tool calls appear)
 
-> "First tool call — `get_exception_detail`. This pulls the full exception record from the exception management system. The agent now knows the type is 'missing_bic', the payment reference, the error code E001, who the originator and beneficiary are.
+> "First thing the agent does — see `load_skill` in the Events panel. That's the agentskills.io pattern in action. The agent is loading a *skill definition* — a file called SKILL.md that encodes the exception repair methodology. Let me explain what that is, because it's a key concept.
 >
-> Second — `get_payment_message`. This retrieves the actual SWIFT MT103 — that's the ISO 15022 standard message format for a single customer credit transfer. It's the source of truth for what was instructed. The agent reads the MT103 fields — it finds field 57A, Account With Institution, is empty. That's the missing BIC. The beneficiary is Schmidt Manufacturing GmbH with a German IBAN starting with DE89.
+> A skill is a portable, versionable specification for how an agent should behave. It's a Markdown file with YAML frontmatter — same idea as a Kubernetes manifest or an OpenAPI spec, but for agent behavior. Our exception-repair skill defines an 8-step diagnostic methodology: review the queue, pull the exception, retrieve the payment message, cross-reference external data, check historical patterns, formulate a diagnosis, recommend an action, present structured output. It also declares compliance constraints — like 'never auto-repair amount mismatches' and 'sanctions decisions require human sign-off.'
+>
+> The skill has L3 reference documents underneath it — SWIFT message format guides, approved repair procedures, ISO 20022 error code mappings. The agent can read those references at runtime via `load_skill_resource` when it needs field-level detail. Think of the skill as the *methodology* and the references as the *domain knowledge*. Both are version-controlled, testable artifacts — not prompt strings buried in application code.
+>
+> The agentskills.io spec also defines an eval format. Each skill has test cases — prompt, expected output, assertions. You can measure whether the skill actually improves agent output compared to a raw LLM without the skill. That's how you prove the skill adds value, and it's how you catch regressions when you update the methodology.
+>
+> Now watch the domain tool calls.
+>
+> `get_exception_detail` — pulls the full exception record from the exception management system. The agent now knows the type is 'missing_bic', the payment reference, the error code E001, who the originator and beneficiary are.
+>
+> `get_payment_message` — retrieves the actual SWIFT MT103 — that's the ISO 15022 standard message format for a single customer credit transfer. It's the source of truth for what was instructed. The agent reads the MT103 fields — it finds field 57A, Account With Institution, is empty. That's the missing BIC. The beneficiary is Schmidt Manufacturing GmbH with a German IBAN starting with DE89.
 >
 > Now it has to *resolve* the BIC. Third call — `get_counterparty_info`. The agent derives candidate BIC codes from the IBAN country code. DE means Germany; the bank code in the IBAN maps to a German clearing bank — either Deutsche Bank or Commerzbank. The agent looks up the BIC, confirms the bank is an active SWIFT member. That's the proposed repair value.
 >
@@ -126,7 +136,7 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 >
 > Level one — Assist — is what you just saw. Agent investigates, human decides. This is where every agent starts in a regulated environment. You're building a track record.
 >
-> Level two — Supervised. The agent executes low-risk repairs automatically — it calls `submit_repair` without waiting for approval. But the human reviews *after the fact*, on a dashboard. You get to level two after 30 days of shadow mode — the agent runs in parallel with the human, both produce a recommendation, you measure agreement. 95% or better accuracy, plus a compliance sign-off, earns the agent supervised authority.
+> Level two — Supervised. The agent executes low-risk repairs automatically — it calls `submit_repair` without waiting for approval. But the human reviews *after the fact*, on a dashboard. You get to level two after 30 days of shadow mode — the agent runs in parallel with the human, both produce a recommendation, you measure agreement. 95% or better accuracy, plus a compliance sign-off, earns the agent supervised authority. And the skill evals I mentioned earlier — the agentskills.io test cases — are what you run continuously to make sure the agent's accuracy doesn't degrade as you update the skill or switch LLM versions.
 >
 > Level three — Autonomous. The agent handles the full lifecycle end-to-end. Humans monitor aggregate metrics — resolution rate, accuracy, exception volume trends — not individual cases.
 >
