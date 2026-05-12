@@ -22,7 +22,13 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 >
 > Architecturally, here's what's running. This is a Google ADK agent — that's the Agent Development Kit, Google's open-source framework for building AI agents. The agent is defined using the agentskills.io specification — an open standard for packaging agent capabilities as portable, testable, versionable skill definitions. Think of a skill like an API contract, but for agent behavior: it declares what the agent can do, what tools it needs, and how it should reason through a problem.
 >
-> The agent is served over the A2A protocol — Agent-to-Agent — which is a JSON-RPC standard for agent interoperability. Any client, any UI, any orchestrator can discover this agent and talk to it. It's running on OpenShift right now, deployed as a container, same CI/CD pipeline as any microservice.
+> The agent is served over the A2A protocol — Agent-to-Agent — which is a JSON-RPC standard for agent interoperability. Any client, any UI, any orchestrator can discover this agent and talk to it.
+>
+> It's running on OpenShift right now, managed by Kagenti — that's an open-source cloud-native platform for deploying and operating AI agents in production. Kagenti is framework-neutral: it doesn't care whether your agent is built with Google ADK, LangGraph, CrewAI, or anything else. What Kagenti provides is the production infrastructure that agent frameworks don't — lifecycle management, zero-trust security, networking, and observability. Think of it as the Kubernetes-native operations layer for agents.
+>
+> On this cluster, Kagenti runs a controller that manages agent deployments as Kubernetes workloads. It integrates Keycloak for OAuth/OIDC authentication, so every request to the agent goes through an identity layer. In our Skills Marketplace production setup, it also injects an AuthBridge sidecar — an Envoy-based proxy that handles JWT validation, SPIFFE workload identity, and policy enforcement at the network edge. The health endpoints, the agent card discovery, the A2A protocol endpoint — those all pass through AuthBridge transparently.
+>
+> For this demo, the agent is deployed as a standard OpenShift container with a Route. In production, Kagenti adds the security and observability layers on top — same agent code, same container, but with identity, auth, tracing, and lifecycle management handled by the platform.
 >
 > The tools the agent calls are mock implementations today — same function signatures as real payment APIs, returning realistic data. In production you swap the function body; the agent doesn't know the difference. The LLM — Gemini 2.5 Flash, running through a LlamaStack inference endpoint — is the only live system."
 
@@ -184,7 +190,7 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 
 > "So what did you just see? Let me be precise about it.
 >
-> An AI agent built on Google ADK using the agentskills.io open specification. It's served over the A2A protocol — standard JSON-RPC, discoverable via a well-known agent card endpoint. It runs on OpenShift, deployed as a container through the same CI/CD pipeline as any microservice.
+> An AI agent built on Google ADK using the agentskills.io open specification. It's served over the A2A protocol — standard JSON-RPC, discoverable via a well-known agent card endpoint. It runs on OpenShift, managed by Kagenti — the open-source platform that handles agent lifecycle, security, and observability so the agent developer doesn't have to.
 >
 > The agent has eight callable tools — each one a Python function that wraps an API call to a payment system. Today those return mock data. In production, you swap the function body — the signature, the docstring, the return type stay the same. The agent, the LLM, the skill definition — none of them change. That's the swap-ready pattern.
 >
@@ -233,6 +239,7 @@ If an audience member asks, here's the precise terminology:
 
 | Concept | What It Is |
 |---------|-----------|
+| **Kagenti** | Open-source cloud-native platform for deploying AI agents in production (github.com/kagenti/kagenti). Framework-neutral — works with ADK, LangGraph, CrewAI, etc. Provides lifecycle management, zero-trust security (AuthBridge + SPIFFE/SPIRE), Keycloak OAuth/OIDC, OTel observability, and A2A/MCP protocol networking. Runs on Kubernetes/OpenShift. |
 | **Google ADK** | Open-source Agent Development Kit from Google. Provides Agent class, tool registration, session management, A2A serving, and eval framework. |
 | **agentskills.io** | Open specification for packaging agent capabilities as portable skills. A skill is a SKILL.md file (YAML frontmatter + Markdown instructions) with optional references, evals, and scripts. |
 | **A2A Protocol** | Agent-to-Agent protocol. JSON-RPC-based standard for agent interoperability. Agents are discoverable via `/.well-known/agent-card.json` and callable via `message/send`. |
