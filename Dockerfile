@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY pyproject.toml config.yaml README.md main.py ./
+COPY pyproject.toml config.yaml README.md ./
 COPY shared/ shared/
 COPY agents/ agents/
 
@@ -13,4 +13,10 @@ EXPOSE 8000
 
 ENV PYTHONPATH=/app
 
-CMD ["python", "main.py"]
+CMD ["adk", "web", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--a2a", \
+     "--session_service_uri", "memory://", \
+     "--log_level", "info", \
+     "/app/agents"]
