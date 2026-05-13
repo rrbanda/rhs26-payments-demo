@@ -36,6 +36,8 @@ _BYPASS_PREFIXES = (
     "/docs",
     "/favicon",
     "/builder",
+    "/run_sse",
+    "/run",
 )
 
 _jwks_cache: dict | None = None
