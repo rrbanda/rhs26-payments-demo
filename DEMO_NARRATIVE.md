@@ -42,7 +42,7 @@ Each beat follows the same rhythm: frame what you're about to show and why it ma
 >
 > On this cluster, Red Hat Agent Operator runs a controller that manages agent deployments as Kubernetes workloads. It integrates Keycloak for OAuth/OIDC authentication, so every request to the agent goes through an identity layer. In our Skills Marketplace production setup, it also injects an AuthBridge sidecar — an Envoy-based proxy that handles JWT validation, SPIFFE workload identity, and policy enforcement at the network edge. The health endpoints, the agent card discovery, the A2A protocol endpoint — those all pass through AuthBridge transparently.
 >
-> For this demo, the agent is deployed as a standard OpenShift AI container with a Route. In production, Red Hat Agent Operator adds the security and observability layers on top — same agent code, same container, but with identity, auth, tracing, and lifecycle management handled by the platform.
+> This demo agent has Keycloak JWT authentication built in — the same Keycloak instance that Red Hat Agent Operator uses for the platform. The agent validates Bearer tokens against Keycloak's JWKS endpoint on every API request. The Dev UI you see in the browser bypasses auth for convenience, but any programmatic A2A call requires a valid JWT. That's application-level auth. In a full production setup, Red Hat Agent Operator adds the network-level security on top — AuthBridge sidecar, SPIFFE workload identity, policy enforcement at the edge.
 >
 > The tools the agent calls are mock implementations today — same function signatures as real payment APIs, returning realistic data. In production you swap the function body; the agent doesn't know the difference. The LLM — Gemini 2.5 Flash, running through a LlamaStack inference endpoint — is the only live system."
 
@@ -505,6 +505,7 @@ If an audience member asks, here's the precise terminology:
 | **LlamaStack** | Meta's open-source inference serving platform. Running on OpenShift AI, proxying to Gemini 2.5 Flash via an OpenAI-compatible API. |
 | **SR 11-7** | Federal Reserve supervisory guidance on model risk management. Requires inventory, validation, and ongoing monitoring of models used in decision-making. |
 | **CP-BSA-012** | (Demo) Compliance policy requiring human sign-off on all sanctions screening decisions under BSA/AML regulations. |
+| **Keycloak JWT Auth** | Application-level authentication. Agent validates Bearer tokens against Keycloak's JWKS endpoint (RS256). Uses the existing `kagenti` realm and client. Dev UI bypasses auth; A2A API calls require a valid token. Set AUTH_DISABLED=true to bypass for local dev. |
 | **Shadow mode** | Agent runs in parallel with the human operator. Both produce recommendations independently. Agreement rate is measured over 30 days to build evidence for expanded autonomy. |
 
 ---
