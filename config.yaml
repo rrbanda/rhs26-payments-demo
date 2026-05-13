@@ -23,6 +23,12 @@ oci:
   namespace: "team1"
   cache_ttl_seconds: 300
 
+auth:
+  keycloak_url: "${KEYCLOAK_URL:-https://keycloak-keycloak.apps.cluster-6crhb.6crhb.sandbox1011.opentlc.com}"
+  realm: "${KEYCLOAK_REALM:-kagenti}"
+  client_id: "${KEYCLOAK_CLIENT_ID:-kagenti}"
+  disabled: false
+
 a2a:
   provider:
     organization: "Skills Marketplace"
